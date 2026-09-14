@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cloud OS</title>
+  <title>SELEZ Cloud OS</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; overflow: hidden; }
@@ -26,7 +26,7 @@
     .close-btn { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; }
     .window-content { flex-grow: 1; width: 100%; height: 100%; border: none; }
 
-    /* SELEZ YouTube Tasarımı */
+    /* SELEZ Özel Tasarımı */
     .yt-brand { background: #ff0000; color: white; font-weight: 900; padding: 6px 14px; border-radius: 8px; font-size: 18px; letter-spacing: 1px; }
     .yt-search-box { display: flex; gap: 8px; }
     .yt-search-input { padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #121212; color: white; outline: none; width: 280px; font-size: 14px; }
@@ -46,13 +46,13 @@
 
   <div class="header">
     <div class="time" id="clock">00:00</div>
-    <div class="date" id="date">Bulut İşletim Sistemi</div>
+    <div class="date" id="date">SELEZ Cloud OS</div>
   </div>
 
   <div class="apps-grid" id="appsGrid">
     <div class="app-card" onclick="openSelezYT()">
       <div class="app-icon" style="background: #ef4444;">▶</div>
-      <span class="app-name">SELEZ YouTube</span>
+      <span class="app-name">SELEZ</span>
     </div>
     <div class="app-card" onclick="openApp('Tarayıcı', 'https://www.google.com/search?igu=1')">
       <div class="app-icon" style="background: #3b82f6;">🌐</div>
@@ -73,12 +73,12 @@
     </div>
   </div>
 
-  <!-- SELEZ YouTube Penceresi -->
+  <!-- SELEZ Video Penceresi -->
   <div class="app-window" id="selezYtWindow">
     <div class="window-bar" style="background: #0f0f0f; border-bottom: 1px solid #272727;">
       <span class="yt-brand">SELEZ</span>
       <div class="yt-search-box">
-        <input type="text" id="ytQuery" class="yt-search-input" placeholder="YouTube'da Ara..." onkeypress="if(event.key==='Enter') searchYouTube()">
+        <input type="text" id="ytQuery" class="yt-search-input" placeholder="SELEZ'de Ara..." onkeypress="if(event.key==='Enter') searchYouTube()">
         <button class="yt-search-btn" onclick="searchYouTube()">Ara</button>
       </div>
       <button class="close-btn" onclick="closeSelezYT()">✕ Kapat</button>
@@ -98,7 +98,7 @@
   <!-- Uygulama Ekleme Penceresi -->
   <div class="app-window" id="addAppWindow">
     <div class="window-bar">
-      <span class="window-title">Yeni Bulut Uygulaması Ekle</span>
+      <span class="window-title">Yeni Uygulama Ekle</span>
       <button class="close-btn" onclick="closeAddAppModal()">✕ Kapat</button>
     </div>
     <div class="form-container">
@@ -110,7 +110,7 @@
   </div>
 
   <script>
-    // GOOGLE CLOUD API KEY
+    // GOOGLE CLOUD API KEY (Buraya kendi API anahtarını koymayı unutma)
     const API_KEY = 'AIzaSyBSMTKc6QUmV6ikTML0figdXRuHDJPoG8o';
 
     function updateClock() {
@@ -134,13 +134,13 @@
 
     async function loadTrendingYT() {
       const container = document.getElementById('ytContent');
-      container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Popüler videolar yükleniyor...</div>';
+      container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Popüler içerikler yükleniyor...</div>';
       try {
         const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=TR&maxResults=12&key=${API_KEY}`);
         const data = await res.json();
         renderYTVideos(data.items);
       } catch (err) {
-        container.innerHTML = '<div style="color:#ef4444; text-align:center; grid-column: 1/-1;">Videolar yüklenemedi. API Anahtarını kontrol edin.</div>';
+        container.innerHTML = '<div style="color:#ef4444; text-align:center; grid-column: 1/-1;">İçerikler yüklenemedi. API Anahtarını kontrol edin.</div>';
       }
     }
 
@@ -179,7 +179,6 @@
       });
     }
 
-    // OTOMATİK BAŞLATMA İZNİ VERİLMİŞ VİDEO OYNATICI
     function playYTVideo(id) {
       const container = document.getElementById('ytContent');
       container.innerHTML = `
