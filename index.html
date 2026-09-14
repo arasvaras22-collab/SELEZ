@@ -7,44 +7,86 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; overflow: hidden; }
+    
+    /* Header & Saat */
     .header { text-align: center; margin-top: 20px; }
     .time { font-size: 3.5rem; font-weight: 300; letter-spacing: 2px; text-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     .date { font-size: 1.1rem; color: #94a3b8; margin-top: 5px; }
-    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 25px; padding: 20px; justify-items: center; align-content: start; flex-grow: 1; margin-top: 30px; }
+    
+    /* Masaüstü Grid */
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 25px; padding: 20px; justify-items: center; align-content: start; flex-grow: 1; margin-top: 30px; overflow-y: auto; }
     .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; }
     .app-card:active { transform: scale(0.9); }
     .app-icon { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-    .app-name { margin-top: 8px; font-size: 13px; color: #e2e8f0; font-weight: 500; }
+    .app-name { margin-top: 8px; font-size: 13px; color: #e2e8f0; font-weight: 500; text-align: center; }
+    
+    /* Sabit Alt Dock */
     .dock { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 28px; padding: 12px 24px; display: flex; gap: 20px; margin: 0 auto 10px auto; border: 1px solid rgba(255,255,255,0.15); }
+    
+    /* Tam Ekran Uygulama Penceresi */
+    .app-window { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 100; flex-direction: column; }
+    .window-bar { background: #1e293b; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    .window-title { font-weight: 600; font-size: 16px; color: #f8fafc; }
+    .close-btn { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+    .window-content { flex-grow: 1; width: 100%; height: 100%; border: none; }
+
+    /* App Ekle Form Penceresi */
+    .form-container { padding: 30px; display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 40px auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; }
+    .form-container input { padding: 12px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: white; outline: none; }
+    .form-container button { padding: 12px; border-radius: 10px; border: none; background: #10b981; color: white; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
+
   <div class="header">
     <div class="time" id="clock">00:00</div>
     <div class="date" id="date">Bulut İşletim Sistemi</div>
   </div>
 
   <div class="apps-grid" id="appsGrid">
-    <div class="app-card" onclick="alert('YouTube modülü birazdan ekleniyor!')">
+    <div class="app-card" onclick="openApp('YouTube', 'https://piped.video')">
       <div class="app-icon" style="background: #ef4444;">▶</div>
       <span class="app-name">YouTube</span>
     </div>
-    <div class="app-card" onclick="alert('Tarayıcı modülü birazdan ekleniyor!')">
+    <div class="app-card" onclick="openApp('Tarayıcı', 'https://www.google.com/search?igu=1')">
       <div class="app-icon" style="background: #3b82f6;">🌐</div>
       <span class="app-name">Tarayıcı</span>
     </div>
-    <div class="app-card" onclick="alert('Uygulama ekleme modülü hazırlanıyor!')">
+    <div class="app-card" onclick="openAddAppModal()">
       <div class="app-icon" style="background: #10b981;">➕</div>
       <span class="app-name">App Ekle</span>
     </div>
   </div>
 
   <div class="dock">
-    <div class="app-card" onclick="alert('YouTube')">
+    <div class="app-card" onclick="openApp('YouTube', 'https://piped.video')">
       <div class="app-icon" style="background: #ef4444;">▶</div>
     </div>
-    <div class="app-card" onclick="alert('Tarayıcı')">
+    <div class="app-card" onclick="openApp('Tarayıcı', 'https://www.google.com/search?igu=1')">
       <div class="app-icon" style="background: #3b82f6;">🌐</div>
+    </div>
+  </div>
+
+  <!-- Çalışan Uygulama Ekranı -->
+  <div class="app-window" id="appWindow">
+    <div class="window-bar">
+      <span class="window-title" id="windowTitle">Uygulama</span>
+      <button class="close-btn" onclick="closeApp()">✕ Kapat</button>
+    </div>
+    <iframe class="window-content" id="appIframe" src=""></iframe>
+  </div>
+
+  <!-- Yeni Uygulama Ekle Ekranı -->
+  <div class="app-window" id="addAppWindow">
+    <div class="window-bar">
+      <span class="window-title">Yeni Bulut Uygulaması Ekle</span>
+      <button class="close-btn" onclick="closeAddAppModal()">✕ Kapat</button>
+    </div>
+    <div class="form-container">
+      <input type="text" id="appNameInput" placeholder="Uygulama Adı (Örn: Vikipedi)">
+      <input type="text" id="appUrlInput" placeholder="URL (Örn: https://tr.wikipedia.org)">
+      <input type="text" id="appIconInput" placeholder="İkon/Emoji (Örn: 📖 veya 🚀)">
+      <button onclick="saveCustomApp()">Masaüstüne Ekle</button>
     </div>
   </div>
 
@@ -52,9 +94,68 @@
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      const options = { weekday: 'long', month: 'long', day: 'numeric' };
+      document.getElementById('date').innerText = now.toLocaleDateString('tr-TR', options);
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    function openApp(title, url) {
+      document.getElementById('windowTitle').innerText = title;
+      document.getElementById('appIframe').src = url;
+      document.getElementById('appWindow').style.display = 'flex';
+    }
+
+    function closeApp() {
+      document.getElementById('appWindow').style.display = 'none';
+      document.getElementById('appIframe').src = '';
+    }
+
+    function openAddAppModal() {
+      document.getElementById('addAppWindow').style.display = 'flex';
+    }
+
+    function closeAddAppModal() {
+      document.getElementById('addAppWindow').style.display = 'none';
+    }
+
+    function saveCustomApp() {
+      const name = document.getElementById('appNameInput').value;
+      const url = document.getElementById('appUrlInput').value;
+      const icon = document.getElementById('appIconInput').value || '📱';
+
+      if(!name || !url) { alert('Lütfen isim ve URL girin!'); return; }
+
+      const customApps = JSON.parse(localStorage.getItem('customApps') || '[]');
+      customApps.push({ name, url, icon });
+      localStorage.setItem('customApps', JSON.stringify(customApps));
+
+      renderCustomApps();
+      closeAddAppModal();
+      document.getElementById('appNameInput').value = '';
+      document.getElementById('appUrlInput').value = '';
+      document.getElementById('appIconInput').value = '';
+    }
+
+    function renderCustomApps() {
+      const customApps = JSON.parse(localStorage.getItem('customApps') || '[]');
+      const grid = document.getElementById('appsGrid');
+      
+      document.querySelectorAll('.custom-app-card').forEach(el => el.remove());
+
+      customApps.forEach(app => {
+        const card = document.createElement('div');
+        card.className = 'app-card custom-app-card';
+        card.onclick = () => openApp(app.name, app.url);
+        card.innerHTML = `
+          <div class="app-icon" style="background: #475569;">${app.icon}</div>
+          <span class="app-name">${app.name}</span>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    renderCustomApps();
   </script>
 </body>
 </html>
