@@ -32,7 +32,7 @@
     .yt-search-input { padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #121212; color: white; outline: none; width: 280px; font-size: 14px; }
     .yt-search-btn { padding: 8px 16px; border-radius: 20px; border: none; background: #cc0000; color: white; cursor: pointer; font-weight: bold; }
     
-    .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 20px 20px 80px 20px; background: #0f0f0f; flex: 1; overflow-y: auto; }
+    .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 20px 20px 80px 20px; background: #0f0f0f; flex: 1; overflow-y: auto; }
     .yt-card { background: #181818; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
     .yt-card:hover { transform: translateY(-4px); }
     .yt-thumb { width: 100%; height: 130px; object-fit: cover; }
@@ -187,12 +187,12 @@
       }
     }
 
-    /* SHORTS AKIŞI */
+    /* SHORTS AKIŞI (Kart Görünümü) */
     async function openShorts() {
       const container = document.getElementById('ytContent');
       container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Shorts Akışı Yükleniyor...</div>';
       try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
         const data = await res.json();
         renderShorts(data.items);
       } catch (err) {
@@ -210,17 +210,41 @@
       items.forEach(item => {
         const videoId = item.id.videoId || item.id;
         const snippet = item.snippet;
+        const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url;
+        const titleEscaped = snippet.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        
         const card = document.createElement('div');
-        card.style = "grid-column: 1/-1; display:flex; flex-direction:column; align-items:center; background:#181818; padding:15px; border-radius:16px; margin-bottom:20px;";
+        card.className = 'yt-card';
+        card.style = "display:flex; flex-direction:column; align-items:center; cursor:pointer;";
+        card.onclick = () => playShortVideo(videoId, titleEscaped, thumb);
         card.innerHTML = `
-          <h4 style="margin-bottom:10px; color:#fff; text-align:center; font-size:14px;">${snippet.title}</h4>
-          <iframe style="width:100%; max-width:340px; height:520px; border:none; border-radius:12px;" 
-                  src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0" 
-                  allowfullscreen>
-          </iframe>
+          <div style="position:relative; width:100%; aspect-ratio:9/16; max-height:320px; overflow:hidden; border-radius:12px; background:#000;">
+            <img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,0,0,0.85); width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.5);">▶</div>
+          </div>
+          <div class="yt-title" style="text-align:center; margin-top:6px;">${snippet.title}</div>
         `;
         container.appendChild(card);
       });
+    }
+
+    /* TEK SHORTS OYNATICI (Sadece seçilen video çalar) */
+    function playShortVideo(id, title, thumb) {
+      if(title && thumb) {
+        addToHistory(id, title, thumb);
+      }
+      const container = document.getElementById('ytContent');
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px;">
+          <button onclick="openShorts()" style="align-self: start; margin-bottom: 15px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">← Shorts Akışına Dön</button>
+          <h4 style="color:#fff; margin-bottom:12px; text-align:center; max-width:360px; font-size:14px;">${title}</h4>
+          <iframe style="width: 100%; max-width: 360px; height: 580px; border: none; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.6);" 
+                  src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen>
+          </iframe>
+        </div>
+      `;
     }
 
     /* KİTAPLIK VE GEÇMİŞ */
@@ -282,7 +306,7 @@
         const videoId = item.id.videoId || item.id;
         const snippet = item.snippet;
         const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url;
-        const titleEscaped = snippet.title.replace(/'/g, "\\'");
+        const titleEscaped = snippet.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const card = document.createElement('div');
         card.className = 'yt-card';
         card.onclick = () => playYTVideo(videoId, titleEscaped, thumb);
