@@ -8,29 +8,35 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     body { background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; overflow: hidden; }
     
-    /* Header & Saat */
     .header { text-align: center; margin-top: 20px; }
     .time { font-size: 3.5rem; font-weight: 300; letter-spacing: 2px; text-shadow: 0 4px 12px rgba(0,0,0,0.5); }
     .date { font-size: 1.1rem; color: #94a3b8; margin-top: 5px; }
     
-    /* Masaüstü Grid */
     .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 25px; padding: 20px; justify-items: center; align-content: start; flex-grow: 1; margin-top: 30px; overflow-y: auto; }
     .app-card { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s; }
     .app-card:active { transform: scale(0.9); }
     .app-icon { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .app-name { margin-top: 8px; font-size: 13px; color: #e2e8f0; font-weight: 500; text-align: center; }
     
-    /* Sabit Alt Dock */
     .dock { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 28px; padding: 12px 24px; display: flex; gap: 20px; margin: 0 auto 10px auto; border: 1px solid rgba(255,255,255,0.15); }
     
-    /* Tam Ekran Uygulama Penceresi */
     .app-window { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 100; flex-direction: column; }
     .window-bar { background: #1e293b; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
     .window-title { font-weight: 600; font-size: 16px; color: #f8fafc; }
     .close-btn { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; }
     .window-content { flex-grow: 1; width: 100%; height: 100%; border: none; }
 
-    /* App Ekle Form Penceresi */
+    /* SELEZ YouTube Tasarımı */
+    .yt-brand { background: #ff0000; color: white; font-weight: 900; padding: 6px 14px; border-radius: 8px; font-size: 18px; letter-spacing: 1px; }
+    .yt-search-box { display: flex; gap: 8px; }
+    .yt-search-input { padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #121212; color: white; outline: none; width: 280px; font-size: 14px; }
+    .yt-search-btn { padding: 8px 16px; border-radius: 20px; border: none; background: #cc0000; color: white; cursor: pointer; font-weight: bold; }
+    .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 20px; background: #0f0f0f; height: 100%; overflow-y: auto; }
+    .yt-card { background: #181818; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+    .yt-card:hover { transform: translateY(-4px); }
+    .yt-thumb { width: 100%; height: 130px; object-fit: cover; }
+    .yt-title { padding: 10px; font-size: 13px; font-weight: 600; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
     .form-container { padding: 30px; display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 40px auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; }
     .form-container input { padding: 12px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: white; outline: none; }
     .form-container button { padding: 12px; border-radius: 10px; border: none; background: #10b981; color: white; font-weight: bold; cursor: pointer; }
@@ -44,9 +50,9 @@
   </div>
 
   <div class="apps-grid" id="appsGrid">
-    <div class="app-card" onclick="openApp('YouTube', 'https://piped.video')">
+    <div class="app-card" onclick="openSelezYT()">
       <div class="app-icon" style="background: #ef4444;">▶</div>
-      <span class="app-name">YouTube</span>
+      <span class="app-name">SELEZ YouTube</span>
     </div>
     <div class="app-card" onclick="openApp('Tarayıcı', 'https://www.google.com/search?igu=1')">
       <div class="app-icon" style="background: #3b82f6;">🌐</div>
@@ -59,7 +65,7 @@
   </div>
 
   <div class="dock">
-    <div class="app-card" onclick="openApp('YouTube', 'https://piped.video')">
+    <div class="app-card" onclick="openSelezYT()">
       <div class="app-icon" style="background: #ef4444;">▶</div>
     </div>
     <div class="app-card" onclick="openApp('Tarayıcı', 'https://www.google.com/search?igu=1')">
@@ -67,7 +73,20 @@
     </div>
   </div>
 
-  <!-- Çalışan Uygulama Ekranı -->
+  <!-- SELEZ YouTube Penceresi -->
+  <div class="app-window" id="selezYtWindow">
+    <div class="window-bar" style="background: #0f0f0f; border-bottom: 1px solid #272727;">
+      <span class="yt-brand">SELEZ</span>
+      <div class="yt-search-box">
+        <input type="text" id="ytQuery" class="yt-search-input" placeholder="YouTube'da Ara...">
+        <button class="yt-search-btn" onclick="searchYouTube()">Ara</button>
+      </div>
+      <button class="close-btn" onclick="closeSelezYT()">✕ Kapat</button>
+    </div>
+    <div id="ytContent" class="yt-grid"></div>
+  </div>
+
+  <!-- Genel Tarayıcı Penceresi -->
   <div class="app-window" id="appWindow">
     <div class="window-bar">
       <span class="window-title" id="windowTitle">Uygulama</span>
@@ -76,21 +95,24 @@
     <iframe class="window-content" id="appIframe" src=""></iframe>
   </div>
 
-  <!-- Yeni Uygulama Ekle Ekranı -->
+  <!-- Uygulama Ekleme Penceresi -->
   <div class="app-window" id="addAppWindow">
     <div class="window-bar">
       <span class="window-title">Yeni Bulut Uygulaması Ekle</span>
       <button class="close-btn" onclick="closeAddAppModal()">✕ Kapat</button>
     </div>
     <div class="form-container">
-      <input type="text" id="appNameInput" placeholder="Uygulama Adı (Örn: Vikipedi)">
-      <input type="text" id="appUrlInput" placeholder="URL (Örn: https://tr.wikipedia.org)">
-      <input type="text" id="appIconInput" placeholder="İkon/Emoji (Örn: 📖 veya 🚀)">
+      <input type="text" id="appNameInput" placeholder="Uygulama Adı">
+      <input type="text" id="appUrlInput" placeholder="URL (https://...)">
+      <input type="text" id="appIconInput" placeholder="İkon/Emoji (📖, 🚀)">
       <button onclick="saveCustomApp()">Masaüstüne Ekle</button>
     </div>
   </div>
 
   <script>
+    // GOOGLE CLOUD'DAN ALDIĞIN API KEY'İ TIRNAKLARIN ARASINA YAPIŞTIR
+    const API_KEY = 'AIzaSyBSMTKc6QUmV6ikTML0figdXRuHDJPoG8o';
+
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -99,6 +121,73 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    function openSelezYT() {
+      document.getElementById('selezYtWindow').style.display = 'flex';
+      loadTrendingYT();
+    }
+
+    function closeSelezYT() {
+      document.getElementById('selezYtWindow').style.display = 'none';
+      document.getElementById('ytContent').innerHTML = '';
+    }
+
+    async function loadTrendingYT() {
+      const container = document.getElementById('ytContent');
+      container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Popüler videolar yükleniyor...</div>';
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=TR&maxResults=12&key=${API_KEY}`);
+        const data = await res.json();
+        renderYTVideos(data.items);
+      } catch (err) {
+        container.innerHTML = '<div style="color:#ef4444; text-align:center; grid-column: 1/-1;">Videolar yüklenemedi. API Anahtarını kontrol edin.</div>';
+      }
+    }
+
+    async function searchYouTube() {
+      const query = document.getElementById('ytQuery').value;
+      if(!query) return;
+      const container = document.getElementById('ytContent');
+      container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Aranıyor...</div>';
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${API_KEY}`);
+        const data = await res.json();
+        renderYTVideos(data.items);
+      } catch (err) {
+        container.innerHTML = '<div style="color:#ef4444; text-align:center; grid-column: 1/-1;">Arama sonucu bulunamadı.</div>';
+      }
+    }
+
+    function renderYTVideos(items) {
+      const container = document.getElementById('ytContent');
+      container.innerHTML = '';
+      if(!items || items.length === 0) {
+        container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1;">Sonuç bulunamadı.</div>';
+        return;
+      }
+      items.forEach(item => {
+        const videoId = item.id.videoId || item.id;
+        const snippet = item.snippet;
+        const card = document.createElement('div');
+        card.className = 'yt-card';
+        card.onclick = () => playYTVideo(videoId);
+        card.innerHTML = `
+          <img class="yt-thumb" src="${snippet.thumbnails.high.url}" alt="thumb">
+          <div class="yt-title">${snippet.title}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function playYTVideo(id) {
+      const container = document.getElementById('ytContent');
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; height: 100%; display: flex; flex-direction: column;">
+          <button onclick="loadTrendingYT()" style="align-self: start; margin-bottom: 10px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer;">← Geri Dön</button>
+          <iframe style="width: 100%; height: 80vh; border: none; border-radius: 12px;" src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1" allowfullscreen></iframe>
+        </div>
+      `;
+    }
 
     function openApp(title, url) {
       document.getElementById('windowTitle').innerText = title;
@@ -111,38 +200,26 @@
       document.getElementById('appIframe').src = '';
     }
 
-    function openAddAppModal() {
-      document.getElementById('addAppWindow').style.display = 'flex';
-    }
-
-    function closeAddAppModal() {
-      document.getElementById('addAppWindow').style.display = 'none';
-    }
+    function openAddAppModal() { document.getElementById('addAppWindow').style.display = 'flex'; }
+    function closeAddAppModal() { document.getElementById('addAppWindow').style.display = 'none'; }
 
     function saveCustomApp() {
       const name = document.getElementById('appNameInput').value;
       const url = document.getElementById('appUrlInput').value;
       const icon = document.getElementById('appIconInput').value || '📱';
-
       if(!name || !url) { alert('Lütfen isim ve URL girin!'); return; }
 
       const customApps = JSON.parse(localStorage.getItem('customApps') || '[]');
       customApps.push({ name, url, icon });
       localStorage.setItem('customApps', JSON.stringify(customApps));
-
       renderCustomApps();
       closeAddAppModal();
-      document.getElementById('appNameInput').value = '';
-      document.getElementById('appUrlInput').value = '';
-      document.getElementById('appIconInput').value = '';
     }
 
     function renderCustomApps() {
       const customApps = JSON.parse(localStorage.getItem('customApps') || '[]');
       const grid = document.getElementById('appsGrid');
-      
       document.querySelectorAll('.custom-app-card').forEach(el => el.remove());
-
       customApps.forEach(app => {
         const card = document.createElement('div');
         card.className = 'app-card custom-app-card';
