@@ -137,7 +137,9 @@
   <script>
     // GOOGLE CLOUD API KEY (Kendi API anahtarını buraya eklemelisin)
     const API_KEY = 'AIzaSyBSMTKc6QUmV6ikTML0figdXRuHDJPoG8o';
-    let shortsObserver = null;
+
+    let currentShortsList = [];
+    let currentShortIndex = 0;
 
     function updateClock() {
       const now = new Date();
@@ -154,15 +156,14 @@
     }
 
     function closeSelezYT() {
-      if(shortsObserver) shortsObserver.disconnect();
       document.getElementById('selezYtWindow').style.display = 'none';
       document.getElementById('ytContent').innerHTML = '';
     }
 
     function resetGridClass() {
-      if(shortsObserver) shortsObserver.disconnect();
       const container = document.getElementById('ytContent');
       container.className = 'yt-grid';
+      container.style = '';
     }
 
     function openAnaSayfa() {
@@ -197,95 +198,95 @@
       }
     }
 
-    /* KESİNTİSİZ AKAN SHORTS AKIŞI (Sadece ekrandaki oynar) */
+    /* GERÇEK YOUTUBE SHORTS OYNATICISI (Doğrudan Ekranı Kaplar) */
     async function openShorts() {
       const container = document.getElementById('ytContent');
-      container.className = ''; // Grid yapısını kaldır
-      container.innerHTML = '<div style="color:#aaa; text-align:center; padding: 40px;">Shorts Akışı Yükleniyor...</div>';
+      container.className = ''; 
+      container.style.cssText = "display: flex; justify-content: center; align-items: center; height: calc(100vh - 125px); background: #000; overflow: hidden; position: relative;";
+      container.innerHTML = '<div style="color:#aaa; text-align:center;">Shorts Yükleniyor...</div>';
+      
       try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
         const data = await res.json();
-        renderShortsFeed(data.items);
+        currentShortsList = data.items || [];
+        currentShortIndex = 0;
+        
+        if(currentShortsList.length > 0) {
+          renderSingleShortPlayer();
+        } else {
+          container.innerHTML = '<div style="color:#aaa;">Shorts bulunamadı.</div>';
+        }
       } catch (err) {
-        container.innerHTML = '<div style="color:#ef4444; text-align:center; padding: 40px;">Shorts akışı yüklenemedi.</div>';
+        container.innerHTML = '<div style="color:#ef4444;">Shorts akışı yüklenemedi. API Anahtarınızı kontrol edin.</div>';
       }
     }
 
-    function renderShortsFeed(items) {
+    function renderSingleShortPlayer() {
       const container = document.getElementById('ytContent');
-      container.innerHTML = '';
-      
-      if(!items || items.length === 0) {
-        container.innerHTML = '<div style="color:#aaa; text-align:center; padding: 40px;">Shorts bulunamadı.</div>';
-        return;
-      }
+      const item = currentShortsList[currentShortIndex];
+      const videoId = item.id.videoId || item.id;
+      const snippet = item.snippet;
+      const titleEscaped = snippet.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url;
 
-      const feed = document.createElement('div');
-      feed.style = "height: calc(100vh - 120px); overflow-y: scroll; scroll-snap-type: y mandatory; width: 100%; background: #000;";
+      // İzlenen Shorts'u otomatik İzleme Geçmişine kaydet
+      addToHistory(videoId, titleEscaped, thumb);
 
-      if (shortsObserver) shortsObserver.disconnect();
-
-      // Sadece ekranda görünen videoyu oynatan Observer
-      shortsObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          const card = entry.target;
-          const videoId = card.dataset.id;
-          const title = card.dataset.title;
-          const thumb = card.dataset.thumb;
-          const playerBox = card.querySelector('.player-box');
-
-          if (entry.isIntersecting) {
-            // Video ekrana tam geldi -> Oynatıcayı yükle & Geçmişe Ekle
-            if (!playerBox.querySelector('iframe')) {
-              playerBox.innerHTML = `
-                <iframe style="width:100%; height:100%; border:none; border-radius:16px;" 
-                        src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                </iframe>
-              `;
-              addToHistory(videoId, title, thumb);
-            }
-          } else {
-            // Video ekrandan çıktı -> Oynatmayı tamamen kapat (RAM/Ses sorununu çözer)
-            playerBox.innerHTML = `
-              <div style="position:relative; width:100%; height:100%;">
-                <img src="${thumb}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;">
-                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,0,0,0.85); width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; color:#fff;">▶</div>
-              </div>
-            `;
-          }
-        });
-      }, { threshold: 0.7 });
-
-      items.forEach(item => {
-        const videoId = item.id.videoId || item.id;
-        const snippet = item.snippet;
-        const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url;
-        const titleEscaped = snippet.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
-        const card = document.createElement('div');
-        card.className = 'short-scroll-item';
-        card.dataset.id = videoId;
-        card.dataset.title = titleEscaped;
-        card.dataset.thumb = thumb;
-        card.style = "scroll-snap-align: start; height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 10px 0;";
-
-        card.innerHTML = `
-          <div class="player-box" style="width: 100%; max-width: 350px; height: 85%; position: relative;">
-            <div style="position:relative; width:100%; height:100%;">
-              <img src="${thumb}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;">
+      container.innerHTML = `
+        <div style="display: flex; gap: 20px; align-items: center; justify-content: center; width: 100%; height: 100%; max-width: 550px; padding: 10px;">
+          <!-- Dikey Video Oynatıcı -->
+          <div style="position: relative; flex: 1; height: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <iframe id="shortsIframe"
+                    style="width: 100%; height: 88%; border: none; border-radius: 16px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.8);" 
+                    src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+            </iframe>
+            <div style="color: #fff; font-size: 13px; font-weight: 600; text-align: center; margin-top: 8px; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${snippet.title}
             </div>
           </div>
-          <div style="color:#fff; font-size:13px; font-weight:600; text-align:center; padding: 8px; max-width: 350px;">${snippet.title}</div>
-        `;
 
-        feed.appendChild(card);
-        shortsObserver.observe(card);
-      });
-
-      container.appendChild(feed);
+          <!-- Yan Butonlar (Sonraki / Önceki) -->
+          <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+            <button onclick="prevShort()" style="width: 48px; height: 48px; border-radius: 50%; background: #222; border: 1px solid #444; color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Önceki Short">
+              ▲
+            </button>
+            <span style="color: #aaa; font-size: 12px; font-weight: bold;">${currentShortIndex + 1}/${currentShortsList.length}</span>
+            <button onclick="nextShort()" style="width: 48px; height: 48px; border-radius: 50%; background: #ff0000; border: none; color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(255,0,0,0.4);" title="Sonraki Short">
+              ▼
+            </button>
+          </div>
+        </div>
+      `;
     }
+
+    function nextShort() {
+      if (currentShortsList.length === 0) return;
+      if (currentShortIndex < currentShortsList.length - 1) {
+        currentShortIndex++;
+      } else {
+        currentShortIndex = 0; // Başa dön
+      }
+      renderSingleShortPlayer();
+    }
+
+    function prevShort() {
+      if (currentShortsList.length === 0) return;
+      if (currentShortIndex > 0) {
+        currentShortIndex--;
+        renderSingleShortPlayer();
+      }
+    }
+
+    /* Klavyedeki Yukarı/Aşağı Ok Tuşları ile Geçiş */
+    document.addEventListener('keydown', (e) => {
+      const selezWindow = document.getElementById('selezYtWindow');
+      if (selezWindow.style.display === 'flex' && currentShortsList.length > 0) {
+        if (e.key === 'ArrowDown') nextShort();
+        if (e.key === 'ArrowUp') prevShort();
+      }
+    });
 
     /* KİTAPLIK VE GEÇMİŞ */
     function addToHistory(id, title, thumb) {
@@ -395,7 +396,7 @@
       const name = document.getElementById('appNameInput').value;
       const url = document.getElementById('appUrlInput').value;
       const icon = document.getElementById('appIconInput').value || '📱';
-      if(!name || !url) { alert('Lütfen isim ve URL girin!'); return; }
+      if(!name || !url) { alert('Lütfen isim me URL girin!'); return; }
 
       const customApps = JSON.parse(localStorage.getItem('customApps') || '[]');
       customApps.push({ name, url, icon });
