@@ -137,6 +137,7 @@
   <script>
     // GOOGLE CLOUD API KEY (Kendi API anahtarını buraya eklemelisin)
     const API_KEY = 'AIzaSyBSMTKc6QUmV6ikTML0figdXRuHDJPoG8o';
+    let shortsObserver = null;
 
     function updateClock() {
       const now = new Date();
@@ -153,11 +154,19 @@
     }
 
     function closeSelezYT() {
+      if(shortsObserver) shortsObserver.disconnect();
       document.getElementById('selezYtWindow').style.display = 'none';
       document.getElementById('ytContent').innerHTML = '';
     }
 
+    function resetGridClass() {
+      if(shortsObserver) shortsObserver.disconnect();
+      const container = document.getElementById('ytContent');
+      container.className = 'yt-grid';
+    }
+
     function openAnaSayfa() {
+      resetGridClass();
       loadTrendingYT();
     }
 
@@ -174,6 +183,7 @@
     }
 
     async function searchYouTube() {
+      resetGridClass();
       const query = document.getElementById('ytQuery').value;
       if(!query) return;
       const container = document.getElementById('ytContent');
@@ -187,64 +197,94 @@
       }
     }
 
-    /* SHORTS AKIŞI (Kart Görünümü) */
+    /* KESİNTİSİZ AKAN SHORTS AKIŞI (Sadece ekrandaki oynar) */
     async function openShorts() {
       const container = document.getElementById('ytContent');
-      container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Shorts Akışı Yükleniyor...</div>';
+      container.className = ''; // Grid yapısını kaldır
+      container.innerHTML = '<div style="color:#aaa; text-align:center; padding: 40px;">Shorts Akışı Yükleniyor...</div>';
       try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
         const data = await res.json();
-        renderShorts(data.items);
+        renderShortsFeed(data.items);
       } catch (err) {
-        container.innerHTML = '<div style="color:#ef4444; text-align:center; grid-column: 1/-1;">Shorts içerikleri yüklenemedi.</div>';
+        container.innerHTML = '<div style="color:#ef4444; text-align:center; padding: 40px;">Shorts akışı yüklenemedi.</div>';
       }
     }
 
-    function renderShorts(items) {
+    function renderShortsFeed(items) {
       const container = document.getElementById('ytContent');
       container.innerHTML = '';
+      
       if(!items || items.length === 0) {
-        container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1;">Shorts bulunamadı.</div>';
+        container.innerHTML = '<div style="color:#aaa; text-align:center; padding: 40px;">Shorts bulunamadı.</div>';
         return;
       }
+
+      const feed = document.createElement('div');
+      feed.style = "height: calc(100vh - 120px); overflow-y: scroll; scroll-snap-type: y mandatory; width: 100%; background: #000;";
+
+      if (shortsObserver) shortsObserver.disconnect();
+
+      // Sadece ekranda görünen videoyu oynatan Observer
+      shortsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const card = entry.target;
+          const videoId = card.dataset.id;
+          const title = card.dataset.title;
+          const thumb = card.dataset.thumb;
+          const playerBox = card.querySelector('.player-box');
+
+          if (entry.isIntersecting) {
+            // Video ekrana tam geldi -> Oynatıcayı yükle & Geçmişe Ekle
+            if (!playerBox.querySelector('iframe')) {
+              playerBox.innerHTML = `
+                <iframe style="width:100%; height:100%; border:none; border-radius:16px;" 
+                        src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+              `;
+              addToHistory(videoId, title, thumb);
+            }
+          } else {
+            // Video ekrandan çıktı -> Oynatmayı tamamen kapat (RAM/Ses sorununu çözer)
+            playerBox.innerHTML = `
+              <div style="position:relative; width:100%; height:100%;">
+                <img src="${thumb}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;">
+                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,0,0,0.85); width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; color:#fff;">▶</div>
+              </div>
+            `;
+          }
+        });
+      }, { threshold: 0.7 });
+
       items.forEach(item => {
         const videoId = item.id.videoId || item.id;
         const snippet = item.snippet;
         const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url;
         const titleEscaped = snippet.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        
-        const card = document.createElement('div');
-        card.className = 'yt-card';
-        card.style = "display:flex; flex-direction:column; align-items:center; cursor:pointer;";
-        card.onclick = () => playShortVideo(videoId, titleEscaped, thumb);
-        card.innerHTML = `
-          <div style="position:relative; width:100%; aspect-ratio:9/16; max-height:320px; overflow:hidden; border-radius:12px; background:#000;">
-            <img src="${thumb}" style="width:100%; height:100%; object-fit:cover;">
-            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,0,0,0.85); width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.5);">▶</div>
-          </div>
-          <div class="yt-title" style="text-align:center; margin-top:6px;">${snippet.title}</div>
-        `;
-        container.appendChild(card);
-      });
-    }
 
-    /* TEK SHORTS OYNATICI (Sadece seçilen video çalar) */
-    function playShortVideo(id, title, thumb) {
-      if(title && thumb) {
-        addToHistory(id, title, thumb);
-      }
-      const container = document.getElementById('ytContent');
-      container.innerHTML = `
-        <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px;">
-          <button onclick="openShorts()" style="align-self: start; margin-bottom: 15px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">← Shorts Akışına Dön</button>
-          <h4 style="color:#fff; margin-bottom:12px; text-align:center; max-width:360px; font-size:14px;">${title}</h4>
-          <iframe style="width: 100%; max-width: 360px; height: 580px; border: none; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.6);" 
-                  src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowfullscreen>
-          </iframe>
-        </div>
-      `;
+        const card = document.createElement('div');
+        card.className = 'short-scroll-item';
+        card.dataset.id = videoId;
+        card.dataset.title = titleEscaped;
+        card.dataset.thumb = thumb;
+        card.style = "scroll-snap-align: start; height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 10px 0;";
+
+        card.innerHTML = `
+          <div class="player-box" style="width: 100%; max-width: 350px; height: 85%; position: relative;">
+            <div style="position:relative; width:100%; height:100%;">
+              <img src="${thumb}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;">
+            </div>
+          </div>
+          <div style="color:#fff; font-size:13px; font-weight:600; text-align:center; padding: 8px; max-width: 350px;">${snippet.title}</div>
+        `;
+
+        feed.appendChild(card);
+        shortsObserver.observe(card);
+      });
+
+      container.appendChild(feed);
     }
 
     /* KİTAPLIK VE GEÇMİŞ */
@@ -257,6 +297,7 @@
     }
 
     function openKitaplik() {
+      resetGridClass();
       const container = document.getElementById('ytContent');
       const history = JSON.parse(localStorage.getItem('selez_history') || '[]');
       container.innerHTML = '';
@@ -319,6 +360,7 @@
     }
 
     function playYTVideo(id, title, thumb) {
+      resetGridClass();
       if(title && thumb) {
         addToHistory(id, title, thumb);
       }
