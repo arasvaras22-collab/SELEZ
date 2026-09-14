@@ -31,11 +31,18 @@
     .yt-search-box { display: flex; gap: 8px; }
     .yt-search-input { padding: 8px 16px; border-radius: 20px; border: 1px solid #333; background: #121212; color: white; outline: none; width: 280px; font-size: 14px; }
     .yt-search-btn { padding: 8px 16px; border-radius: 20px; border: none; background: #cc0000; color: white; cursor: pointer; font-weight: bold; }
-    .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 20px; background: #0f0f0f; height: 100%; overflow-y: auto; }
+    
+    .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 20px 20px 80px 20px; background: #0f0f0f; flex: 1; overflow-y: auto; }
     .yt-card { background: #181818; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
     .yt-card:hover { transform: translateY(-4px); }
     .yt-thumb { width: 100%; height: 130px; object-fit: cover; }
     .yt-title { padding: 10px; font-size: 13px; font-weight: 600; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Alt Navigasyon Menüsü */
+    .yt-bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #121212; border-top: 1px solid #272727; display: flex; justify-content: space-around; align-items: center; z-index: 105; }
+    .nav-btn { background: none; border: none; color: #aaa; display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; gap: 3px; font-weight: 500; }
+    .nav-btn:hover, .nav-btn.active { color: #fff; }
+    .nav-icon { font-size: 20px; }
 
     .form-container { padding: 30px; display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 40px auto; background: #1e293b; border-radius: 20px; border: 1px solid #334155; }
     .form-container input { padding: 12px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: white; outline: none; }
@@ -76,14 +83,32 @@
   <!-- SELEZ Video Penceresi -->
   <div class="app-window" id="selezYtWindow">
     <div class="window-bar" style="background: #0f0f0f; border-bottom: 1px solid #272727;">
-      <span class="yt-brand">SELEZ</span>
+      <span class="yt-brand" onclick="openAnaSayfa()" style="cursor:pointer;">SELEZ</span>
       <div class="yt-search-box">
         <input type="text" id="ytQuery" class="yt-search-input" placeholder="SELEZ'de Ara..." onkeypress="if(event.key==='Enter') searchYouTube()">
         <button class="yt-search-btn" onclick="searchYouTube()">Ara</button>
       </div>
       <button class="close-btn" onclick="closeSelezYT()">✕ Kapat</button>
     </div>
+
+    <!-- İçerik Alanı -->
     <div id="ytContent" class="yt-grid"></div>
+
+    <!-- Alt Menü (Navigasyon) -->
+    <div class="yt-bottom-nav">
+      <button class="nav-btn" onclick="openAnaSayfa()">
+        <span class="nav-icon">🏠</span>
+        <span>Ana Sayfa</span>
+      </button>
+      <button class="nav-btn" onclick="openShorts()">
+        <span class="nav-icon">📱</span>
+        <span>Shorts</span>
+      </button>
+      <button class="nav-btn" onclick="openKitaplik()">
+        <span class="nav-icon">📚</span>
+        <span>Kitaplık</span>
+      </button>
+    </div>
   </div>
 
   <!-- Genel Tarayıcı Penceresi -->
@@ -110,7 +135,7 @@
   </div>
 
   <script>
-    // GOOGLE CLOUD API KEY (Buraya kendi API anahtarını koymayı unutma)
+    // GOOGLE CLOUD API KEY (Kendi API anahtarını buraya eklemelisin)
     const API_KEY = 'AIzaSyBSMTKc6QUmV6ikTML0figdXRuHDJPoG8o';
 
     function updateClock() {
@@ -124,12 +149,16 @@
 
     function openSelezYT() {
       document.getElementById('selezYtWindow').style.display = 'flex';
-      loadTrendingYT();
+      openAnaSayfa();
     }
 
     function closeSelezYT() {
       document.getElementById('selezYtWindow').style.display = 'none';
       document.getElementById('ytContent').innerHTML = '';
+    }
+
+    function openAnaSayfa() {
+      loadTrendingYT();
     }
 
     async function loadTrendingYT() {
@@ -158,6 +187,90 @@
       }
     }
 
+    /* SHORTS AKIŞI */
+    async function openShorts() {
+      const container = document.getElementById('ytContent');
+      container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;">Shorts Akışı Yükleniyor...</div>';
+      try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&type=video&videoDuration=short&q=shorts&key=${API_KEY}`);
+        const data = await res.json();
+        renderShorts(data.items);
+      } catch (err) {
+        container.innerHTML = '<div style="color:#ef4444; text-align:center; grid-column: 1/-1;">Shorts içerikleri yüklenemedi.</div>';
+      }
+    }
+
+    function renderShorts(items) {
+      const container = document.getElementById('ytContent');
+      container.innerHTML = '';
+      if(!items || items.length === 0) {
+        container.innerHTML = '<div style="color:#aaa; text-align:center; grid-column: 1/-1;">Shorts bulunamadı.</div>';
+        return;
+      }
+      items.forEach(item => {
+        const videoId = item.id.videoId || item.id;
+        const snippet = item.snippet;
+        const card = document.createElement('div');
+        card.style = "grid-column: 1/-1; display:flex; flex-direction:column; align-items:center; background:#181818; padding:15px; border-radius:16px; margin-bottom:20px;";
+        card.innerHTML = `
+          <h4 style="margin-bottom:10px; color:#fff; text-align:center; font-size:14px;">${snippet.title}</h4>
+          <iframe style="width:100%; max-width:340px; height:520px; border:none; border-radius:12px;" 
+                  src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0" 
+                  allowfullscreen>
+          </iframe>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    /* KİTAPLIK VE GEÇMİŞ */
+    function addToHistory(id, title, thumb) {
+      let history = JSON.parse(localStorage.getItem('selez_history') || '[]');
+      history = history.filter(item => item.id !== id);
+      history.unshift({ id, title, thumb, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+      if(history.length > 30) history.pop();
+      localStorage.setItem('selez_history', JSON.stringify(history));
+    }
+
+    function openKitaplik() {
+      const container = document.getElementById('ytContent');
+      const history = JSON.parse(localStorage.getItem('selez_history') || '[]');
+      container.innerHTML = '';
+
+      const headerDiv = document.createElement('div');
+      headerDiv.style = "grid-column: 1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;";
+      headerDiv.innerHTML = `
+        <h3 style="color:#fff;">📚 İzleme Geçmişi</h3>
+        ${history.length > 0 ? '<button onclick="clearHistory()" style="background:#ef4444; color:#fff; border:none; padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:bold;">Geçmişi Temizle</button>' : ''}
+      `;
+      container.appendChild(headerDiv);
+
+      if(history.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.style = "color:#aaa; text-align:center; grid-column: 1/-1; padding: 40px;";
+        emptyMsg.innerText = "Henüz izleme geçmişiniz yok.";
+        container.appendChild(emptyMsg);
+        return;
+      }
+
+      history.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'yt-card';
+        card.onclick = () => playYTVideo(item.id, item.title, item.thumb);
+        card.innerHTML = `
+          <img class="yt-thumb" src="${item.thumb}" alt="thumb">
+          <div class="yt-title">${item.title}</div>
+          <div style="font-size:11px; color:#888; padding:0 10px 10px 10px;">İzlendi: ${item.time}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function clearHistory() {
+      localStorage.removeItem('selez_history');
+      openKitaplik();
+    }
+
     function renderYTVideos(items) {
       const container = document.getElementById('ytContent');
       container.innerHTML = '';
@@ -168,23 +281,28 @@
       items.forEach(item => {
         const videoId = item.id.videoId || item.id;
         const snippet = item.snippet;
+        const thumb = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url;
+        const titleEscaped = snippet.title.replace(/'/g, "\\'");
         const card = document.createElement('div');
         card.className = 'yt-card';
-        card.onclick = () => playYTVideo(videoId);
+        card.onclick = () => playYTVideo(videoId, titleEscaped, thumb);
         card.innerHTML = `
-          <img class="yt-thumb" src="${snippet.thumbnails.high.url}" alt="thumb">
+          <img class="yt-thumb" src="${thumb}" alt="thumb">
           <div class="yt-title">${snippet.title}</div>
         `;
         container.appendChild(card);
       });
     }
 
-    function playYTVideo(id) {
+    function playYTVideo(id, title, thumb) {
+      if(title && thumb) {
+        addToHistory(id, title, thumb);
+      }
       const container = document.getElementById('ytContent');
       container.innerHTML = `
         <div style="grid-column: 1/-1; height: 100%; display: flex; flex-direction: column;">
-          <button onclick="loadTrendingYT()" style="align-self: start; margin-bottom: 10px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">← Geri Dön</button>
-          <iframe style="width: 100%; height: 80vh; border: none; border-radius: 12px;" 
+          <button onclick="openAnaSayfa()" style="align-self: start; margin-bottom: 10px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">← Ana Sayfaya Dön</button>
+          <iframe style="width: 100%; height: 70vh; border: none; border-radius: 12px;" 
                   src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" 
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                   allowfullscreen>
